@@ -1,37 +1,45 @@
-# Sudoku 游戏领域对象重构设计文档 (DESIGN.md)
+# Sudoku 游戏领域对象重构
 
-## 1. 你的 `Sudoku` / `Game` 的职责边界是什么？
-* **`Sudoku` (领域实体)**：负责维护 9x9 的盘面数据，提供填值、校验、深拷贝、序列化/反序列化、外表化、胜利检测、冲突检查等能力。它只关心当前盘面的状态。
-* **`Game` (聚合根)**：负责持有当前 `Sudoku` 实例，管理历史快照（past/future），实现撤销/重做/重置，代理胜利检测和冲突检查，提供序列化/反序列化能力，是 UI 与领域逻辑的主要接口。
+1) `Sudoku` / `Game` 的职责
 
-## 2. `Move` 是值对象还是实体对象？为什么？
-* **`Move` 是值对象 (Value Object)**。
-* **原因**：只包含 `{ row, col, value }`，不关心身份，只关心数据内容。两次同样的输入等价。
+- `Sudoku`：只负责 9x9 盘面数据的存取、校验、胜利检测、冲突检测、深拷贝、序列化/反序列化和一个简易的 `toString()` 用于调试。
+- `Game`：作为聚合根，持有当前 `Sudoku`（`present`），并维护历史快照 `past`/`future` 以及 `initial`。它实现 `guess()`、`undo()`、`redo()`、`reset()`、序列化/反序列化等，UI 通过 `Game` 与领域交互。
 
-## 3. history 中存储的是什么？为什么？
-* **存储内容**：`past` 和 `future` 栈中存储的是 `Sudoku` 的完整快照（深拷贝）。
-* **原因**：
-    1. 实现简单，撤销/重做直接恢复快照。
-    2. 数独数据量小，内存压力极低。
-    3. 深拷贝可彻底避免引用共享导致的历史污染。
+2) `Move` 的设计
 
-## 4. 你的复制策略是什么？哪些地方需要深拷贝？
-* **策略**：所有快照、对外暴露的 grid、构造/clone 都用 JSON 序列化强制深拷贝。
-* **需要深拷贝的地方**：
-    1. `Sudoku` 构造/clone
-    2. `Game` 的 past/future/present/initial
-    3. `Sudoku.getGrid()`
-* **后果说明**：如果用浅拷贝，历史快照会被后续操作污染，撤销/重做失效。
+- `Move` 只是一个值对象（`{ row, col, value }`），不需要身份，等价比较以内容为准，简单直接。
 
-## 5. 你的序列化 / 反序列化设计是什么？
-* **序列化**：`Sudoku.toJSON()`/`Game.toJSON()`，递归保存所有快照。
-* **反序列化**：`Sudoku.fromJSON()`/`Game.fromJSON()`，可完整恢复所有状态。
-* **说明**：只序列化盘面数据，不序列化方法和临时变量。
+3) 历史（history）存储内容和原因
 
-## 6. 你的外表化接口是什么？为什么这样设计？
-* **接口**：`Sudoku.toString()`，返回可读的 9x9 字符串矩阵，空位用 `.`。
-* **理由**：方便调试和日志输出，直观表达当前局面。
+- 我把 `past`/`future` 都存整盘的 `Sudoku` 快照（深拷贝）。理由：实现最直接，撤销/重做就是恢复快照；数独数据量小，性能开销能接受；避免引用共享导致的历史污染。
 
----
+4) 复制策略（为什么用深拷贝）
 
-本设计完全满足作业所有要求，所有核心逻辑均在领域对象中实现，UI 只负责渲染和事件转发。
+- 所有对外返回的 grid、以及保存到 `past`/`future`/`present`/`initial` 的时候都用 JSON 序列化/反序列化做深拷贝。
+- 理由：保证历史不可变，避免后续修改影响历史快照，撤销/重做才可靠。
+
+5) 序列化 / 反序列化
+
+- `Sudoku.toJSON()`、`Game.toJSON()` 输出纯数据结构（只包含 grid 数据），`fromJSON()` 能完整恢复 `present`、`past`、`future`、`initial`。
+- 这让本地存档（localStorage 三槽）可以直接存/读，读档后能恢复完整历史，支持之后继续 undo/redo。
+
+6) UI 与领域同步方式（为什么不用全局响应式双向同步）
+
+- 原因：直接让领域对象（`Game`）改动后通过一个显式同步操作把 `userGrid` 更新到 UI，可以避免响应式死循环（之前试过 `$: syncUserGrid()` 会导致循环）。
+- 具体做法：每次 `guess()` / `undo()` / `redo()` / `reset()` 后，调用 `Game.getSudoku().getGrid()` 然后逐格更新 `userGrid`（store）的值。这样 UI 始终和 `Game.present` 保持一致。
+
+7) 关于 undo/redo 的实现细节与回调机制
+
+- `Game` 内部保存 `past`/`future`，`guess()` 会把当前 `present` 的深拷贝推入 `past`，并清空 `future`。
+- `undo()` 会把当前 `present` 推到 `future`，并弹出 `past` 的快照恢复为 `present`；`redo()` 反向操作。
+- 为了让 UI 按钮（↶ / ↷）能在其它组件操作后立即响应，我加了 `setOnChange(cb)` 接口：每当 `guess()`/`undo()`/`redo()`/`reset()` 完成时，`Game` 会调用注册的回调。UI 在回调里更新 `canUndo`/`canRedo` 等本地状态并同步 `userGrid`。
+
+8) 本地存档（3 槽）设计
+
+- 存档就是把 `Game.toJSON()` 存到 `localStorage` 的某个键里；读档会 `createGameFromJSON()` 恢复 `present`/`past`/`future`/`initial` 并同步到 `userGrid`，读档后可以继续 undo/redo。
+
+9) 设计权衡与说明（why this way）
+
+- 简单优先：用快照实现历史简单且可靠，适合作业级别的工程。
+- 明确同步：显式从领域到 UI 的同步，避免复杂的双向响应式耦合和潜在死循环。
+- 可扩展：如果以后想优化内存，可以把快照改成差分（delta），但那会增加 undo/redo 逻辑复杂度，当前不需要。
