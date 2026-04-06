@@ -81,14 +81,7 @@
 	<Timer />
 
 	<div class="flex gap-2 flex-wrap">
-		<button on:click={handleUndo} disabled={!myGame || !myGame.canUndo()}
-			class="px-3 py-1 bg-blue-500 text-white rounded disabled:bg-gray-300 text-sm">
-			↶ Undo
-		</button>
-		<button on:click={handleRedo} disabled={!myGame || !myGame.canRedo()}
-			class="px-3 py-1 bg-blue-500 text-white rounded disabled:bg-gray-300 text-sm">
-			↷ Redo
-		</button>
+		<!-- 使用右侧圆形图标 ↶/↷（Actions.svelte）触发 Undo/Redo，移除重复文本按钮 -->
 		<button on:click={() => handleSaveToSlot(saveSlots[0])} class="px-2 py-1 bg-green-500 text-white rounded text-sm">
 			存1
 		</button>
@@ -120,7 +113,7 @@
 		</div>
 	{/if}
 
-	<Actions />
+	<Actions myGame={myGame} />
 </div>
 
 <style>
