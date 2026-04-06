@@ -6,6 +6,9 @@
 	import { cursor } from '@sudoku/stores/cursor';
 	import { candidates } from '@sudoku/stores/candidates';
 	import Cell from './Cell.svelte';
+	import { onMount } from 'svelte';
+
+	export let myGame;
 
 	function isSelected(cursorStore, x, y) {
 		return cursorStore.x === x && cursorStore.y === y;
@@ -24,9 +27,17 @@
 
 	function getValueAtCursor(gridStore, cursorStore) {
 		if (cursorStore.x === null && cursorStore.y === null) return null;
-
 		return gridStore[cursorStore.y][cursorStore.x];
 	}
+
+	function handleCellInput(x, y, value) {
+		userGrid.set({ x, y }, value);
+		if (myGame) {
+			myGame.guess({ row: y, col: x, value });
+		}
+	}
+
+	// 移除 $: syncUserGrid();
 </script>
 
 <div class="board-padding relative z-10">
@@ -34,26 +45,23 @@
 		<div class="w-full" style="padding-top: 100%"></div>
 	</div>
 	<div class="board-padding absolute inset-0 flex justify-center">
-
 		<div class="bg-white shadow-2xl rounded-xl overflow-hidden w-full h-full max-w-xl grid" class:bg-gray-200={$gamePaused}>
-
 			{#each $userGrid as row, y}
 				{#each row as value, x}
 					<Cell {value}
-					      cellY={y + 1}
-					      cellX={x + 1}
-					      candidates={$candidates[x + ',' + y]}
+					      cellY={y+1} cellX={x+1}
+					      candidates={$candidates[x+','+y]}
 					      disabled={$gamePaused}
-					      selected={isSelected($cursor, x, y)}
+					      selected={isSelected($cursor,x,y)}
 					      userNumber={$grid[y][x] === 0}
-					      sameArea={$settings.highlightCells && !isSelected($cursor, x, y) && isSameArea($cursor, x, y)}
-					      sameNumber={$settings.highlightSame && value && !isSelected($cursor, x, y) && getValueAtCursor($userGrid, $cursor) === value}
-					      conflictingNumber={$settings.highlightConflicting && $grid[y][x] === 0 && $invalidCells.includes(x + ',' + y)} />
+					      sameArea={$settings.highlightCells && !isSelected($cursor,x,y) && isSameArea($cursor,x,y)}
+					      sameNumber={$settings.highlightSame && value && !isSelected($cursor,x,y) && getValueAtCursor($userGrid,$cursor) === value}
+					      conflictingNumber={$settings.highlightConflicting && $grid[y][x] === 0 && $invalidCells.includes(x+','+y)}
+					      on:input={(e) => handleCellInput(x, y, e.detail)}
+					/>
 				{/each}
 			{/each}
-
 		</div>
-
 	</div>
 </div>
 

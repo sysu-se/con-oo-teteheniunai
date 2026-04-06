@@ -3,12 +3,12 @@
 	import { cursor } from '@sudoku/stores/cursor';
 	import { notes } from '@sudoku/stores/notes';
 	import { candidates } from '@sudoku/stores/candidates';
-
-	// TODO: Improve keyboardDisabled
 	import { keyboardDisabled } from '@sudoku/stores/keyboard';
 
+	export let myGame;
+
 	function handleKeyButton(num) {
-		if (!$keyboardDisabled) {
+		if (!$keyboardDisabled && $cursor.x !== null && $cursor.y !== null) {
 			if ($notes) {
 				if (num === 0) {
 					candidates.clear($cursor);
@@ -20,8 +20,10 @@
 				if ($candidates.hasOwnProperty($cursor.x + ',' + $cursor.y)) {
 					candidates.clear($cursor);
 				}
-
 				userGrid.set($cursor, num);
+				if (myGame) {
+					myGame.guess({ row: $cursor.y, col: $cursor.x, value: num });
+				}
 			}
 		}
 	}
