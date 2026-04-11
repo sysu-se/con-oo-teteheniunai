@@ -2,15 +2,22 @@
 	import { onMount } from 'svelte';
 	import { BASE_URL } from '@sudoku/constants';
 	import { modal } from '@sudoku/stores/modal';
-	import { grid } from '@sudoku/stores/grid';
+	import { grid, userGrid } from '@sudoku/stores/grid';
 	import Clipboard from '../../Utils/Clipboard.svelte';
 
 	export let data = {};
 	export let hideModal;
 
-	const sencode = grid.getSencode($grid);
+	const SAVE_CODE_PREFIX = 'SAVE1:';
 
-	const link = BASE_URL + '#' + sencode;
+	function encodeSaveCode(puzzle, progress) {
+		return SAVE_CODE_PREFIX + btoa(JSON.stringify({ puzzle, progress }));
+	}
+
+	$: puzzleCode = grid.getSencode($grid);
+	$: saveCode = encodeSaveCode(puzzleCode, $userGrid);
+
+	$: link = BASE_URL + '#' + puzzleCode;
 	const encodedLink = encodeURIComponent(link);
 	const facebookLink = 'https://www.facebook.com/sharer/sharer.php?u=' + encodedLink;
 	const twitterLink = 'https://twitter.com/intent/tweet?text=Check%20out%20this%20Sudoku%20puzzle!&url=' + encodedLink;
@@ -56,14 +63,16 @@
 </div>
 
 <div class="code-container">
-	<input class="input code-field" type="text" readonly value={sencode} on:click={e => select(e.target)}>
+		<input class="input code-field" type="text" readonly value={saveCode} on:click={e => select(e.target)}>
 
-	<button class="btn btn-copy" on:click={copyText(sencode)}>
+		<button class="btn btn-copy" on:click={copyText(saveCode)}>
 		<svg class="icon-outline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
 		</svg>
 	</button>
 </div>
+
+	<p class="mt-3 text-sm text-gray-600">This code restores your current board state, including filled cells.</p>
 
 <hr class="my-8" />
 

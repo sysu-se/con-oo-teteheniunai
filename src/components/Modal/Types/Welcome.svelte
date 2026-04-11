@@ -3,18 +3,71 @@
 	import { startNew, startCustom } from '@sudoku/game';
 	import { validateSencode } from '@sudoku/sencode';
 	import { DIFFICULTIES } from '@sudoku/constants';
+	import { userGrid } from '@sudoku/stores/grid';
 
 	export let data = {};
 	export let hideModal;
 
+	const SAVE_CODE_PREFIX = 'SAVE1:';
+
 	let difficulty = $difficultyStore;
 	let sencode = data.sencode || '';
 
+	function decodeSaveCode(code) {
+		const trimmed = code.trim();
+		if (!trimmed.startsWith(SAVE_CODE_PREFIX)) {
+			return null;
+		}
+
+		try {
+			const payload = JSON.parse(atob(trimmed.slice(SAVE_CODE_PREFIX.length)));
+			if (!payload || typeof payload !== 'object') {
+				return null;
+			}
+
+			if (!validateSencode(payload.puzzle)) {
+				return null;
+			}
+
+			if (!Array.isArray(payload.progress) || payload.progress.length !== 9) {
+				return null;
+			}
+
+			for (const row of payload.progress) {
+				if (!Array.isArray(row) || row.length !== 9) {
+					return null;
+				}
+
+				for (const cell of row) {
+					if (!Number.isInteger(cell) || cell < 0 || cell > 9) {
+						return null;
+					}
+				}
+			}
+
+			return payload;
+		} catch (error) {
+			return null;
+		}
+	}
+
+	function applyProgress(progress) {
+		for (let y = 0; y < 9; y++) {
+			for (let x = 0; x < 9; x++) {
+				userGrid.set({ x, y }, progress[y][x]);
+			}
+		}
+	}
+
 	$: enteredSencode = sencode.trim().length !== 0;
-	$: buttonDisabled = enteredSencode ? !validateSencode(sencode) : !DIFFICULTIES.hasOwnProperty(difficulty);
+	$: saveCode = decodeSaveCode(sencode);
+	$: buttonDisabled = enteredSencode ? !(validateSencode(sencode) || saveCode) : !DIFFICULTIES.hasOwnProperty(difficulty);
 
 	function handleStart() {
-		if (validateSencode(sencode)) {
+		if (saveCode) {
+			startCustom(saveCode.puzzle);
+			applyProgress(saveCode.progress);
+		} else if (validateSencode(sencode)) {
 			startCustom(sencode);
 		} else {
 			startNew(difficulty);
@@ -28,7 +81,7 @@
 
 {#if data.sencode}
 	<div class="p-3 text-lg rounded bg-primary bg-opacity-25 border-l-8 border-primary border-opacity-75 mb-4">
-		Someone shared a Sudoku puzzle with you!<br>Just click start if you want to play it
+		Someone shared a Sudoku code with you!<br>Just click start if you want to restore it
 	</div>
 {/if}
 
@@ -48,7 +101,7 @@
 	</div>
 </div>
 
-<label for="sencode" class="text-lg mb-3">Or, if you have a code for a custom Sudoku puzzle, enter it here:</label>
+<label for="sencode" class="text-lg mb-3">Or, paste a shared Sudoku code here to restore your board:</label>
 
 <input id="sencode" class="input font-mono mb-5" bind:value={sencode} type="text">
 

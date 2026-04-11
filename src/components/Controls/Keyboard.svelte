@@ -9,6 +9,10 @@
 
 	function handleKeyButton(num) {
 		if (!$keyboardDisabled && $cursor.x !== null && $cursor.y !== null) {
+			if (myGame && typeof myGame.isGiven === 'function' && myGame.isGiven($cursor.y, $cursor.x)) {
+				return;
+			}
+
 			if ($notes) {
 				if (num === 0) {
 					candidates.clear($cursor);
@@ -20,10 +24,10 @@
 				if ($candidates.hasOwnProperty($cursor.x + ',' + $cursor.y)) {
 					candidates.clear($cursor);
 				}
-				userGrid.set($cursor, num);
 				if (myGame) {
 					myGame.guess({ row: $cursor.y, col: $cursor.x, value: num });
 				}
+				userGrid.set($cursor, num);
 			}
 		}
 	}

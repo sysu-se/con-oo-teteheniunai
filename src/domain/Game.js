@@ -6,7 +6,6 @@ export class Game {
     this.past = [];
     this.future = [];
     this.initial = sudoku.clone();
-    this._onChange = null;
   }
 
   getSudoku() {
@@ -14,24 +13,28 @@ export class Game {
   }
 
   guess(move) {
+    const next = this.present.clone();
+    const changed = next.guess(move);
+    if (!changed) {
+      return false;
+    }
+
     this.past.push(this.present.clone());
-    this.present.guess(move);
+    this.present = next;
     this.future = [];
-    if (this._onChange) this._onChange();
+    return true;
   }
 
   undo() {
     if (!this.canUndo()) return;
     this.future.push(this.present.clone());
     this.present = this.past.pop();
-    if (this._onChange) this._onChange();
   }
 
   redo() {
     if (!this.canRedo()) return;
     this.past.push(this.present.clone());
     this.present = this.future.pop();
-    if (this._onChange) this._onChange();
   }
 
   canUndo() {
@@ -46,7 +49,6 @@ export class Game {
     this.present = this.initial.clone();
     this.past = [];
     this.future = [];
-    if (this._onChange) this._onChange();
   }
 
   isSolved() {
@@ -72,11 +74,10 @@ export class Game {
     game.present = Sudoku.fromJSON(obj.present);
     game.past = obj.past.map(Sudoku.fromJSON);
     game.future = obj.future.map(Sudoku.fromJSON);
-    game._onChange = null;
     return game;
   }
 
-  setOnChange(cb) {
-    this._onChange = cb;
+  isGiven(row, col) {
+    return this.present.isGiven(row, col);
   }
 }

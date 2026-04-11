@@ -18,14 +18,12 @@
 	$: if (myGame) {
 		canUndo = myGame.canUndo();
 		canRedo = myGame.canRedo();
-
-		if (typeof myGame.setOnChange === 'function') {
-			myGame.setOnChange(() => {
-				canUndo = myGame.canUndo();
-				canRedo = myGame.canRedo();
-			});
-		}
 	}
+
+	$: $userGrid, myGame && (() => {
+		canUndo = myGame.canUndo();
+		canRedo = myGame.canRedo();
+	})();
 
 	function handleHint() {
 		if (hintsAvailable) {

@@ -31,10 +31,15 @@
 	}
 
 	function handleCellInput(x, y, value) {
-		userGrid.set({ x, y }, value);
+		if (myGame && typeof myGame.isGiven === 'function' && myGame.isGiven(y, x)) {
+			return;
+		}
+
 		if (myGame) {
 			myGame.guess({ row: y, col: x, value });
 		}
+
+		userGrid.set({ x, y }, value);
 	}
 
 	// 移除 $: syncUserGrid();
