@@ -5,11 +5,11 @@
 	import { candidates } from '@sudoku/stores/candidates';
 	import { keyboardDisabled } from '@sudoku/stores/keyboard';
 
-	export let myGame;
+	export let gameStore;
 
 	function handleKeyButton(num) {
 		if (!$keyboardDisabled && $cursor.x !== null && $cursor.y !== null) {
-			if (myGame && typeof myGame.isGiven === 'function' && myGame.isGiven($cursor.y, $cursor.x)) {
+			if (gameStore && typeof gameStore.isGiven === 'function' && gameStore.isGiven($cursor.y, $cursor.x)) {
 				return;
 			}
 
@@ -19,15 +19,13 @@
 				} else {
 					candidates.add($cursor, num);
 				}
-				userGrid.set($cursor, 0);
 			} else {
 				if ($candidates.hasOwnProperty($cursor.x + ',' + $cursor.y)) {
 					candidates.clear($cursor);
 				}
-				if (myGame) {
-					myGame.guess({ row: $cursor.y, col: $cursor.x, value: num });
+				if (gameStore) {
+					gameStore.guess({ row: $cursor.y, col: $cursor.x, value: num });
 				}
-				userGrid.set($cursor, num);
 			}
 		}
 	}

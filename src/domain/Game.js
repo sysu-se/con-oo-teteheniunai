@@ -61,6 +61,23 @@ export class Game {
     this.future = [];
   }
 
+  loadProgress(progressGrid) {
+    const restored = this.initial.clone();
+
+    for (let row = 0; row < 9; row++) {
+      for (let col = 0; col < 9; col++) {
+        const value = progressGrid[row][col];
+        if (value !== 0 && !restored.isGiven(row, col)) {
+          restored.guess({ row, col, value });
+        }
+      }
+    }
+
+    this.present = restored;
+    this.past = [];
+    this.future = [];
+  }
+
   isSolved() {
     return this.present.isSolved();
   }

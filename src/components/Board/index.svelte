@@ -6,9 +6,8 @@
 	import { cursor } from '@sudoku/stores/cursor';
 	import { candidates } from '@sudoku/stores/candidates';
 	import Cell from './Cell.svelte';
-	import { onMount } from 'svelte';
 
-	export let myGame;
+	export let gameStore;
 
 	function isSelected(cursorStore, x, y) {
 		return cursorStore.x === x && cursorStore.y === y;
@@ -31,18 +30,14 @@
 	}
 
 	function handleCellInput(x, y, value) {
-		if (myGame && typeof myGame.isGiven === 'function' && myGame.isGiven(y, x)) {
+		if (gameStore && typeof gameStore.isGiven === 'function' && gameStore.isGiven(y, x)) {
 			return;
 		}
 
-		if (myGame) {
-			myGame.guess({ row: y, col: x, value });
+		if (gameStore) {
+			gameStore.guess({ row: y, col: x, value });
 		}
-
-		userGrid.set({ x, y }, value);
 	}
-
-	// 移除 $: syncUserGrid();
 </script>
 
 <div class="board-padding relative z-10">

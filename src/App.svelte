@@ -4,21 +4,13 @@
 	import game from '@sudoku/game';
 	import { modal } from '@sudoku/stores/modal';
 	import { gameWon } from '@sudoku/stores/game';
-	import { grid } from '@sudoku/stores/grid';
+	import { userGrid } from '@sudoku/stores/grid';
 	import Board from './components/Board/index.svelte';
 	import Controls from './components/Controls/index.svelte';
 	import Header from './components/Header/index.svelte';
 	import Modal from './components/Modal/index.svelte';
 
-	import { createSudoku, createGame } from './domain';
-	let myGame;
-
-	grid.subscribe($grid => {
-		if ($grid && $grid.length === 9) {
-			const sudoku = createSudoku($grid);
-			myGame = createGame({ sudoku });
-		}
-	});
+	let gameStore = userGrid;
 
 	gameWon.subscribe(won => {
 		if (won) {
@@ -41,11 +33,11 @@
 </header>
 
 <section>
-	<Board myGame={myGame} />
+	<Board gameStore={gameStore} />
 </section>
 
 <footer>
-	<Controls myGame={myGame} />
+	<Controls gameStore={gameStore} />
 </footer>
 
 <Modal />
