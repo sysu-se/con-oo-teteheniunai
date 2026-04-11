@@ -49,4 +49,17 @@ describe('HW1 domain invariants', () => {
 			expect.arrayContaining(['row', 'col', 'box'])
 		)
 	})
+
+	it('keeps hint-filled cells when undoing later guesses', async () => {
+		const { createGame, createSudoku } = await loadDomainApi()
+		const game = createGame({ sudoku: createSudoku(makePuzzle()) })
+
+		expect(game.applyHint({ row: 0, col: 2, value: 4 })).toBe(true)
+		expect(game.guess({ row: 0, col: 3, value: 6 })).toBe(true)
+
+		game.undo()
+
+		expect(game.getSudoku().getGrid()[0][2]).toBe(4)
+		expect(game.getSudoku().getGrid()[0][3]).toBe(0)
+	})
 })

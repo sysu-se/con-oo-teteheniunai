@@ -31,7 +31,10 @@
 				candidates.clear($cursor);
 			}
 
-			userGrid.applyHint($cursor);
+			const hintedValue = userGrid.applyHint($cursor);
+			if (myGame && typeof myGame.applyHint === 'function') {
+				myGame.applyHint({ row: $cursor.y, col: $cursor.x, value: hintedValue });
+			}
 		}
 	}
 

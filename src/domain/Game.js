@@ -25,6 +25,16 @@ export class Game {
     return true;
   }
 
+  applyHint(move) {
+    const changed = this.present.guess(move);
+    if (!changed) {
+      return false;
+    }
+
+    this.future = [];
+    return true;
+  }
+
   undo() {
     if (!this.canUndo()) return;
     this.future.push(this.present.clone());
